@@ -4,11 +4,64 @@ require_once 'vendor/autoload.php';
 
 use App\OciConfig;
 use App\OciApi;
-use Dotenv\Dotenv;
 
-// Cargar variables de entorno
-$dotenv = Dotenv::createImmutable(__DIR__);
-$dotenv->safeLoad();
+// Cargar variables de entorno manualmente (más confiable que Dotenv en CI)
+function loadEnv($file) {
+    if (!file_exists($file)) {
+        throw new Exception("Archivo .env no encontrado: $file");
+    }
+
+    $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        // Ignorar comentarios y líneas vacías
+        if (empty($line) || strpos($line, '#') === 0) {
+            continue;
+        }
+
+        // Parsear KEY=VALUE
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+
+            // Remover comillas si existen
+            if ((strpos($value, '"') === 0 && strrpos($value, '"') === strlen($value) - 1) ||
+                (strpos($value, "'") === 0 && strrpos($value, "'") === strlen($value) - 1)) {
+                $value = substr($value, 1, -1);
+            }
+
+            putenv("$key=$value");
+            $_ENV[$key] = $value;
+        }
+    }
+}
+
+// Cargar .env
+try {
+    loadEnv(__DIR__ . '/.env');
+} catch (Exception $e) {
+    echo "Error cargando .env: " . $e->getMessage() . "\n";
+    exit(1);
+}
+
+// Verificar variables requeridas
+$required = [
+    'OCI_REGION', 'OCI_USER_ID', 'OCI_TENANCY_ID', 'OCI_KEY_FINGERPRINT',
+    'OCI_PRIVATE_KEY_FILENAME', 'OCI_SUBNET_ID', 'OCI_IMAGE_ID', 'OCI_SSH_PUBLIC_KEY'
+];
+
+$missing = [];
+foreach ($required as $var) {
+    if (empty(getenv($var))) {
+        $missing[] = $var;
+    }
+}
+
+if (!empty($missing)) {
+    echo "Error: Faltan variables de entorno: " . implode(', ', $missing) . "\n";
+    exit(1);
+}
 
 // Configuración
 $config = new OciConfig(
@@ -20,8 +73,8 @@ $config = new OciConfig(
     getenv('OCI_AVAILABILITY_DOMAIN') ?: null,
     getenv('OCI_SUBNET_ID'),
     getenv('OCI_IMAGE_ID'),
-    (int) getenv('OCI_OCPUS'),
-    (int) getenv('OCI_MEMORY_IN_GBS')
+    (int) (getenv('OCI_OCPUS') ?: 4),
+    (int) (getenv('OCI_MEMORY_IN_GBS') ?: 24)
 );
 
 $shape = getenv('OCI_SHAPE') ?: 'VM.Standard.A1.Flex';
