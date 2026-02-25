@@ -27,36 +27,42 @@ class Signer
         $host = parse_url($uri, PHP_URL_HOST);
         $path = parse_url($uri, PHP_URL_PATH) ?: '/';
         $query = parse_url($uri, PHP_URL_QUERY) ?: '';
-
+        
         $target = $path;
         if ($query) {
             $target .= '?' . $query;
         }
-
-        $signingString = "$method $target
-host: $host
-date: $date";
-
+        
+        $signingString = "$method $target\nhost: $host\ndate: $date";
+        
+        $bodyHash = null;
         if ($body !== null) {
             $bodyHash = hash('sha256', $body);
-            $signingString .= "
-x-content-sha256: $bodyHash
-content-type: application/json";
+            $signingString .= "\nx-content-sha256: $bodyHash\ncontent-type: application/json";
         }
-
+        
         $signature = $this->sign($signingString);
-
+        
+        // Construir header de autorización con comillas escapadas
+        $authHeader = sprintf(
+            'Authorization: Signature version="1",keyId="%s/%s/%s",algorithm="rsa-sha256",signature="%s"',
+            $this->tenancyId,
+            $this->userId,
+            $this->keyFingerprint,
+            $signature
+        );
+        
         $headers = [
             "Date: $date",
             "Host: $host",
-            "Authorization: Signature version="1",keyId="$this->tenancyId/$this->userId/$this->keyFingerprint",algorithm="rsa-sha256",signature="$signature"",
+            $authHeader,
             'Content-Type: application/json'
         ];
-
+        
         if ($body !== null) {
             $headers[] = "x-content-sha256: $bodyHash";
         }
-
+        
         return $headers;
     }
 
@@ -66,15 +72,15 @@ content-type: application/json";
         if (!$privateKey) {
             throw new \Exception("Cannot read private key from: $this->privateKeyPath");
         }
-
+        
         $key = openssl_pkey_get_private($privateKey);
         if (!$key) {
             throw new \Exception("Invalid private key");
         }
-
+        
         $signature = '';
         openssl_sign($data, $signature, $key, OPENSSL_ALGO_SHA256);
-
+        
         return base64_encode($signature);
     }
 }
