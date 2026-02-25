@@ -51,6 +51,24 @@ jobs:
         OCI_SHAPE=VM.Standard.A1.Flex
         ENVFILE
         echo "OCI_SSH_PUBLIC_KEY=${{ secrets.OCI_SSH_PUBLIC_KEY }}" >> .env
+    - name: Debug environment
+      run: |
+        echo "=== Verificando variables ==="
+        echo "Region: $OCI_REGION"
+        echo "User ID: $OCI_USER_ID"
+        echo "Tenancy ID: $OCI_TENANCY_ID"
+        echo "Fingerprint: $OCI_KEY_FINGERPRINT"
+        echo "=== Verificando archivo de clave ==="
+        ls -la ~/.oci/key.pem
+        echo "=== Primeras líneas de la clave ==="
+        head -2 ~/.oci/key.pem
+        echo "=== Últimas líneas de la clave ==="
+        tail -2 ~/.oci/key.pem
+      env:
+        OCI_REGION: ${{ secrets.OCI_REGION }}
+        OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
+        OCI_TENANCY_ID: ${{ secrets.OCI_TENANCY_ID }}
+        OCI_KEY_FINGERPRINT: ${{ secrets.OCI_KEY_FINGERPRINT }}
         
     - name: Run capacity check
       run: php index.php
