@@ -30,33 +30,27 @@ jobs:
     - name: Setup OCI private key
       run: |
         mkdir -p ~/.oci
-        echo "$OCI_PRIVATE_KEY" > ~/.oci/key.pem
+        printf '%s' "$OCI_PRIVATE_KEY" > ~/.oci/key.pem
         chmod 600 ~/.oci/key.pem
       env:
         OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
         
     - name: Create .env file
       run: |
-        echo "OCI_REGION=$OCI_REGION" > .env
-        echo "OCI_USER_ID=$OCI_USER_ID" >> .env
-        echo "OCI_TENANCY_ID=$OCI_TENANCY_ID" >> .env
-        echo "OCI_KEY_FINGERPRINT=$OCI_KEY_FINGERPRINT" >> .env
-        echo "OCI_PRIVATE_KEY_FILENAME=/home/runner/.oci/key.pem" >> .env
-        echo "OCI_SUBNET_ID=$OCI_SUBNET_ID" >> .env
-        echo "OCI_IMAGE_ID=$OCI_IMAGE_ID" >> .env
-        echo "OCI_SSH_PUBLIC_KEY=$OCI_SSH_PUBLIC_KEY" >> .env
-        echo "OCI_SHAPE=VM.Standard.A1.Flex" >> .env
-        echo "OCI_OCPUS=4" >> .env
-        echo "OCI_MEMORY_IN_GBS=24" >> .env
-        echo "OCI_MAX_INSTANCES=1" >> .env
-      env:
-        OCI_REGION: ${{ secrets.OCI_REGION }}
-        OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
-        OCI_TENANCY_ID: ${{ secrets.OCI_TENANCY_ID }}
-        OCI_KEY_FINGERPRINT: ${{ secrets.OCI_KEY_FINGERPRINT }}
-        OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
-        OCI_IMAGE_ID: ${{ secrets.OCI_IMAGE_ID }}
-        OCI_SSH_PUBLIC_KEY: ${{ secrets.OCI_SSH_PUBLIC_KEY }}
+        cat > .env << ENVFILE
+        OCI_REGION=${{ secrets.OCI_REGION }}
+        OCI_USER_ID=${{ secrets.OCI_USER_ID }}
+        OCI_TENANCY_ID=${{ secrets.OCI_TENANCY_ID }}
+        OCI_KEY_FINGERPRINT=${{ secrets.OCI_KEY_FINGERPRINT }}
+        OCI_PRIVATE_KEY_FILENAME=/home/runner/.oci/key.pem
+        OCI_SUBNET_ID=${{ secrets.OCI_SUBNET_ID }}
+        OCI_IMAGE_ID=${{ secrets.OCI_IMAGE_ID }}
+        OCI_OCPUS=4
+        OCI_MEMORY_IN_GBS=24
+        OCI_MAX_INSTANCES=1
+        OCI_SHAPE=VM.Standard.A1.Flex
+        ENVFILE
+        echo "OCI_SSH_PUBLIC_KEY=${{ secrets.OCI_SSH_PUBLIC_KEY }}" >> .env
         
     - name: Run capacity check
       run: php index.php
