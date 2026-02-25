@@ -1,0 +1,15 @@
+{
+    "name": "tu-usuario/oci-arm-host-capacity",
+    "description": "Script para crear instancias ARM en OCI cuando haya capacidad disponible",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "vlucas/phpdotenv": "^5.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\": "src/"
+        }
+    },
+    "license": "MIT"
+}

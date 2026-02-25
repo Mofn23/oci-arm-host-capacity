@@ -1,0 +1,8 @@
+vendor/
+.env
+.oci/
+*.pem
+*.log
+.idea/
+.vscode/
+.DS_Store
