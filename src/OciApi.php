@@ -6,6 +6,7 @@ class OciApi
 {
     private Signer $signer;
     private string $baseUrl;
+    private string $identityUrl;
 
     public function __construct(OciConfig $config)
     {
@@ -15,23 +16,18 @@ class OciApi
             $config->keyFingerPrint,
             $config->privateKeyFilename
         );
-        // Asegurar que la URL base es correcta
+        // URL para Compute API (IAAS)
         $this->baseUrl = "https://iaas.{$config->region}.oraclecloud.com";
-        echo "DEBUG - Base URL: {$this->baseUrl}\n";
-        echo "DEBUG - Region: {$config->region}\n";
-        echo "DEBUG - Tenancy ID: {$config->tenancyId}\n";
+        // URL para Identity API (para availability domains)
+        $this->identityUrl = "https://identity.{$config->region}.oraclecloud.com";
     }
 
     public function getInstances(OciConfig $config): array
     {
         $url = "{$this->baseUrl}/20160918/instances?compartmentId={$config->tenancyId}";
-        echo "DEBUG - Instances URL: $url\n";
         $headers = $this->signer->getHeaders('GET', $url);
-        echo "DEBUG - Headers: " . print_r($headers, true) . "\n";
         
         $response = HttpClient::getResponse($url, $headers);
-        echo "DEBUG - Response code: {$response['code']}\n";
-        echo "DEBUG - Response body: " . substr($response['body'], 0, 200) . "\n";
 
         if ($response['code'] === 200) {
             return json_decode($response['body'], true) ?? [];
@@ -43,13 +39,11 @@ class OciApi
 
     public function getAvailabilityDomains(OciConfig $config): array
     {
-        $url = "{$this->baseUrl}/20160918/availabilityDomains?compartmentId={$config->tenancyId}";
-        echo "DEBUG - AvailabilityDomains URL: $url\n";
+        // CORREGIDO: Usar identityUrl en lugar de baseUrl
+        $url = "{$this->identityUrl}/20160918/availabilityDomains?compartmentId={$config->tenancyId}";
         $headers = $this->signer->getHeaders('GET', $url);
         
         $response = HttpClient::getResponse($url, $headers);
-        echo "DEBUG - Response code: {$response['code']}\n";
-        echo "DEBUG - Response body: " . substr($response['body'], 0, 500) . "\n";
 
         if ($response['code'] === 200) {
             $domains = json_decode($response['body'], true);
