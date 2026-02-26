@@ -16,9 +16,7 @@ class OciApi
             $config->keyFingerPrint,
             $config->privateKeyFilename
         );
-        // URL para Compute API (IAAS)
         $this->baseUrl = "https://iaas.{$config->region}.oraclecloud.com";
-        // URL para Identity API (para availability domains)
         $this->identityUrl = "https://identity.{$config->region}.oraclecloud.com";
     }
 
@@ -39,7 +37,6 @@ class OciApi
 
     public function getAvailabilityDomains(OciConfig $config): array
     {
-        // CORREGIDO: Usar identityUrl en lugar de baseUrl
         $url = "{$this->identityUrl}/20160918/availabilityDomains?compartmentId={$config->tenancyId}";
         $headers = $this->signer->getHeaders('GET', $url);
         
@@ -73,6 +70,10 @@ class OciApi
     public function createInstance(OciConfig $config, string $shape, string $sshKey, string $availabilityDomain): array
     {
         $url = "{$this->baseUrl}/20160918/instances";
+        
+        echo "DEBUG - Creating instance in AD: $availabilityDomain\n";
+        echo "DEBUG - Subnet ID: {$config->subnetId}\n";
+        echo "DEBUG - Image ID: {$config->imageId}\n";
 
         $payload = [
             'compartmentId' => $config->tenancyId,
@@ -94,9 +95,15 @@ class OciApi
         ];
 
         $body = json_encode($payload);
+        echo "DEBUG - Request body: " . substr($body, 0, 500) . "...\n";
+        
         $headers = $this->signer->getHeaders('POST', $url, $body);
+        echo "DEBUG - Request headers set\n";
 
         $response = HttpClient::getResponse($url, $headers, 'POST', $body);
+        
+        echo "DEBUG - Create response code: {$response['code']}\n";
+        echo "DEBUG - Create response body: " . substr($response['body'], 0, 500) . "\n";
 
         if ($response['code'] === 200) {
             return json_decode($response['body'], true);
