@@ -32,15 +32,6 @@ jobs:
         mkdir -p ~/.oci
         printf '%s' "$OCI_PRIVATE_KEY" > ~/.oci/key.pem
         chmod 600 ~/.oci/key.pem
-        echo "=== Verificando clave ==="
-        ls -la ~/.oci/key.pem
-        echo "=== Primeras líneas ==="
-        head -1 ~/.oci/key.pem
-        echo "=== Últimas líneas ==="
-        tail -1 ~/.oci/key.pem
-        echo "=== Contenido completo (primeros 100 chars) ==="
-        head -c 100 ~/.oci/key.pem
-        echo ""
       env:
         OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
         
@@ -57,9 +48,8 @@ jobs:
         echo "OCI_MEMORY_IN_GBS=24" >> .env
         echo "OCI_MAX_INSTANCES=1" >> .env
         echo "OCI_SHAPE=VM.Standard.A1.Flex" >> .env
+        echo "OCI_BOOT_VOLUME_SIZE_IN_GBS=200" >> .env
         echo "OCI_SSH_PUBLIC_KEY=$OCI_SSH_PUBLIC_KEY" >> .env
-        echo "=== Contenido de .env ==="
-        cat .env | grep -v "PRIVATE_KEY\|SSH" || true
       env:
         OCI_REGION: ${{ secrets.OCI_REGION }}
         OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
