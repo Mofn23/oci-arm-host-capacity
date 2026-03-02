@@ -28,7 +28,8 @@ class OciConfig
         string $subnetId,
         string $imageId,
         int $ocups,
-        int $memoryInGBs
+        int $memoryInGBs,
+        ?string $bootVolumeSizeInGBs = null
     ) {
         $this->region = $region;
         $this->ociUserId = $ociUserId;
@@ -40,6 +41,7 @@ class OciConfig
         $this->imageId = $imageId;
         $this->ocpus = $ocups;
         $this->memoryInGBs = $memoryInGBs;
+        $this->bootVolumeSizeInGBs = $bootVolumeSizeInGBs;
     }
 
     public function setBootVolumeId(string $bootVolumeId): void
