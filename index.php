@@ -10,7 +10,7 @@ function loadEnv($file) {
     if (!file_exists($file)) {
         throw new Exception("Archivo .env no encontrado: $file");
     }
-
+    
     $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
         $line = trim($line);
@@ -18,19 +18,19 @@ function loadEnv($file) {
         if (empty($line) || strpos($line, '#') === 0) {
             continue;
         }
-
+        
         // Parsear KEY=VALUE
         if (strpos($line, '=') !== false) {
             list($key, $value) = explode('=', $line, 2);
             $key = trim($key);
             $value = trim($value);
-
+            
             // Remover comillas si existen
             if ((strpos($value, '"') === 0 && strrpos($value, '"') === strlen($value) - 1) ||
                 (strpos($value, "'") === 0 && strrpos($value, "'") === strlen($value) - 1)) {
                 $value = substr($value, 1, -1);
             }
-
+            
             putenv("$key=$value");
             $_ENV[$key] = $value;
         }
@@ -63,7 +63,17 @@ if (!empty($missing)) {
     exit(1);
 }
 
-// Configuración
+// Configuración con tamaño de disco de 200GB
+$bootVolumeSize = getenv('OCI_BOOT_VOLUME_SIZE_IN_GBS') ?: '200';
+
+echo "OCI ARM Host Capacity Checker\n";
+echo "Region: " . getenv('OCI_REGION') . "\n";
+echo "Shape: VM.Standard.A1.Flex\n";
+echo "OCPUs: 4, Memory: 24GB\n";
+echo "Boot Volume Size: {$bootVolumeSize}GB\n";
+echo "Max instances: 1\n";
+echo "---\n";
+
 $config = new OciConfig(
     getenv('OCI_REGION'),
     getenv('OCI_USER_ID'),
@@ -73,20 +83,14 @@ $config = new OciConfig(
     getenv('OCI_AVAILABILITY_DOMAIN') ?: null,
     getenv('OCI_SUBNET_ID'),
     getenv('OCI_IMAGE_ID'),
-    (int) (getenv('OCI_OCPUS') ?: 4),
-    (int) (getenv('OCI_MEMORY_IN_GBS') ?: 24)
+    4,
+    24,
+    $bootVolumeSize  // <-- NUEVO: Tamaño de disco
 );
 
-$shape = getenv('OCI_SHAPE') ?: 'VM.Standard.A1.Flex';
-$maxInstances = (int) (getenv('OCI_MAX_INSTANCES') ?: 1);
+$shape = 'VM.Standard.A1.Flex';
+$maxInstances = 1;
 $sshKey = getenv('OCI_SSH_PUBLIC_KEY');
-
-echo "OCI ARM Host Capacity Checker\n";
-echo "Region: {$config->region}\n";
-echo "Shape: $shape\n";
-echo "OCPUs: {$config->ocpus}, Memory: {$config->memoryInGBs}GB\n";
-echo "Max instances: $maxInstances\n";
-echo "---\n";
 
 $api = new OciApi($config);
 
@@ -116,23 +120,23 @@ echo "Checking availability domains: " . implode(', ', (array)$availabilityDomai
 // Intentar crear en cada dominio
 foreach ((array)$availabilityDomains as $ad) {
     echo "\nTrying availability domain: $ad\n";
-
+    
     try {
         $instance = $api->createInstance($config, $shape, $sshKey, $ad);
-        echo "\n✅ SUCCESS! Instance created:\n";
+        echo "\n✅ SUCCESS! Instance created with {$bootVolumeSize}GB disk:\n";
         echo json_encode($instance, JSON_PRETTY_PRINT) . "\n";
         exit(0);
     } catch (\Exception $e) {
         $msg = $e->getMessage();
         echo "❌ Failed: $msg\n";
-
+        
         // Si es error de capacidad, continuar con siguiente AD
         if (strpos($msg, 'Out of host capacity') !== false) {
             echo "(Out of capacity, trying next domain...)\n";
             sleep(2);
             continue;
         }
-
+        
         // Otro error, detener
         exit(1);
     }
