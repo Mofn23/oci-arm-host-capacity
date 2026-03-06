@@ -2,7 +2,7 @@ name: OCI ARM Host Capacity Checker
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/2 * * * *'  # Cambiado de */5 a */2 (cada 2 minutos)
   workflow_dispatch:
 
 concurrency:
@@ -12,7 +12,7 @@ concurrency:
 jobs:
   check-capacity:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 3  # Reducido de 5 a 3 minutos
     
     steps:
     - name: Checkout code
